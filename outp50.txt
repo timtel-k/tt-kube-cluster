@@ -1,0 +1,1260 @@
+deployer@8940f1569920:/deployment/jbt-kube-cluster/terraform$ ./bin/tf.py plan --step=01-basic --workspace infra
+INFO:root:Running terraform plan
+INFO:root:Running terraform init
+INFO:root:Profile - default
+Initializing modules...
+
+Initializing the backend...
+
+Initializing provider plugins...
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+* infra
+INFO:root:Select workspace infra
+Acquiring state lock. This may take a few moments...
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+data.terraform_remote_state.master_module: Refreshing state...
+aws_route53_zone.cluster[0]: Refreshing state... [id=Z0920475CC1ZDWKFHM5S]
+module.eks.data.aws_ami.eks_worker: Refreshing state...
+data.aws_eks_cluster_auth.main: Refreshing state...
+data.aws_route53_zone.main: Refreshing state...
+module.eks.data.aws_caller_identity.current: Refreshing state...
+module.eks.data.aws_ami.eks_worker_windows: Refreshing state...
+module.eks.data.aws_iam_policy_document.workers_assume_role_policy: Refreshing state...
+module.eks.data.aws_iam_policy_document.cluster_assume_role_policy: Refreshing state...
+data.aws_vpc.main: Refreshing state...
+data.aws_security_group.default: Refreshing state...
+data.aws_iam_policy_document.eks_route53: Refreshing state...
+aws_iam_policy.eks_route53: Refreshing state... [id=arn:aws:iam::138150065595:policy/infra-eks-route53]
+data.aws_iam_policy_document.dns: Refreshing state...
+module.eks.data.aws_iam_policy_document.worker_autoscaling[0]: Refreshing state...
+
+------------------------------------------------------------------------
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+ <= read (data resources)
+
+Terraform will perform the following actions:
+
+  # data.aws_iam_role.worker will be read during apply
+  # (config refers to values not yet known)
+ <= data "aws_iam_role" "worker"  {
+      + arn                         = (known after apply)
+      + assume_role_policy          = (known after apply)
+      + assume_role_policy_document = (known after apply)
+      + create_date                 = (known after apply)
+      + description                 = (known after apply)
+      + id                          = (known after apply)
+      + max_session_duration        = (known after apply)
+      + name                        = (known after apply)
+      + path                        = (known after apply)
+      + permissions_boundary        = (known after apply)
+      + role_id                     = (known after apply)
+      + tags                        = (known after apply)
+      + unique_id                   = (known after apply)
+    }
+
+  # data.aws_security_group.node_pool will be read during apply
+  # (config refers to values not yet known)
+ <= data "aws_security_group" "node_pool"  {
+      + arn         = (known after apply)
+      + description = (known after apply)
+      + id          = (known after apply)
+      + name        = (known after apply)
+      + tags        = {
+          + "kubernetes.io/cluster/infra" = "owned"
+        }
+      + vpc_id      = (known after apply)
+
+      + filter {
+          + name   = "tag-key"
+          + values = [
+              + "Name",
+            ]
+        }
+    }
+
+  # aws_iam_role.worker_role will be created
+  + resource "aws_iam_role" "worker_role" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "ec2.amazonaws.com"
+                        }
+                      + Sid       = ""
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "infra-worker-group-role"
+      + path                  = "/"
+      + unique_id             = (known after apply)
+    }
+
+  # aws_iam_role_policy.alb will be created
+  + resource "aws_iam_role_policy" "alb" {
+      + id     = (known after apply)
+      + name   = "infra-alb-policy"
+      + policy = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action   = [
+                          + "acm:DescribeCertificate",
+                          + "acm:ListCertificates",
+                          + "acm:GetCertificate",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "ec2:AuthorizeSecurityGroupIngress",
+                          + "ec2:CreateSecurityGroup",
+                          + "ec2:CreateTags",
+                          + "ec2:DeleteTags",
+                          + "ec2:DeleteSecurityGroup",
+                          + "ec2:DescribeAccountAttributes",
+                          + "ec2:DescribeAddresses",
+                          + "ec2:DescribeInstances",
+                          + "ec2:DescribeInstanceStatus",
+                          + "ec2:DescribeInternetGateways",
+                          + "ec2:DescribeNetworkInterfaces",
+                          + "ec2:DescribeSecurityGroups",
+                          + "ec2:DescribeSubnets",
+                          + "ec2:DescribeTags",
+                          + "ec2:DescribeVpcs",
+                          + "ec2:ModifyInstanceAttribute",
+                          + "ec2:ModifyNetworkInterfaceAttribute",
+                          + "ec2:RevokeSecurityGroupIngress",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "elasticloadbalancing:AddListenerCertificates",
+                          + "elasticloadbalancing:AddTags",
+                          + "elasticloadbalancing:CreateListener",
+                          + "elasticloadbalancing:CreateLoadBalancer",
+                          + "elasticloadbalancing:CreateRule",
+                          + "elasticloadbalancing:CreateTargetGroup",
+                          + "elasticloadbalancing:DeleteListener",
+                          + "elasticloadbalancing:DeleteLoadBalancer",
+                          + "elasticloadbalancing:DeleteRule",
+                          + "elasticloadbalancing:DeleteTargetGroup",
+                          + "elasticloadbalancing:DeregisterTargets",
+                          + "elasticloadbalancing:DescribeListenerCertificates",
+                          + "elasticloadbalancing:DescribeListeners",
+                          + "elasticloadbalancing:DescribeLoadBalancers",
+                          + "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                          + "elasticloadbalancing:DescribeRules",
+                          + "elasticloadbalancing:DescribeSSLPolicies",
+                          + "elasticloadbalancing:DescribeTags",
+                          + "elasticloadbalancing:DescribeTargetGroups",
+                          + "elasticloadbalancing:DescribeTargetGroupAttributes",
+                          + "elasticloadbalancing:DescribeTargetHealth",
+                          + "elasticloadbalancing:ModifyListener",
+                          + "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                          + "elasticloadbalancing:ModifyRule",
+                          + "elasticloadbalancing:ModifyTargetGroup",
+                          + "elasticloadbalancing:ModifyTargetGroupAttributes",
+                          + "elasticloadbalancing:RegisterTargets",
+                          + "elasticloadbalancing:RemoveListenerCertificates",
+                          + "elasticloadbalancing:RemoveTags",
+                          + "elasticloadbalancing:SetIpAddressType",
+                          + "elasticloadbalancing:SetSecurityGroups",
+                          + "elasticloadbalancing:SetSubnets",
+                          + "elasticloadbalancing:SetWebACL",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "iam:CreateServiceLinkedRole",
+                          + "iam:GetServerCertificate",
+                          + "iam:ListServerCertificates",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "cognito-idp:DescribeUserPoolClient",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "waf-regional:GetWebACLForResource",
+                          + "waf-regional:GetWebACL",
+                          + "waf-regional:AssociateWebACL",
+                          + "waf-regional:DisassociateWebACL",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "tag:GetResources",
+                          + "tag:TagResources",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                  + {
+                      + Action   = [
+                          + "waf:GetWebACL",
+                        ]
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + role   = (known after apply)
+    }
+
+  # aws_route53_record.cluster_ns_records[0] will be created
+  + resource "aws_route53_record" "cluster_ns_records" {
+      + allow_overwrite = (known after apply)
+      + fqdn            = (known after apply)
+      + id              = (known after apply)
+      + name            = "infra.jbt-iops.com"
+      + records         = [
+          + "ns-1078.awsdns-06.org",
+          + "ns-1755.awsdns-27.co.uk",
+          + "ns-235.awsdns-29.com",
+          + "ns-997.awsdns-60.net",
+        ]
+      + ttl             = 30
+      + type            = "NS"
+      + zone_id         = "Z3VOJ1O09B7GAZ"
+    }
+
+  # aws_route_table.main will be created
+  + resource "aws_route_table" "main" {
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + route            = [
+          + {
+              + cidr_block                = "0.0.0.0/0"
+              + egress_only_gateway_id    = ""
+              + gateway_id                = "igw-74a4b613"
+              + instance_id               = ""
+              + ipv6_cidr_block           = ""
+              + nat_gateway_id            = ""
+              + network_interface_id      = ""
+              + transit_gateway_id        = ""
+              + vpc_peering_connection_id = ""
+            },
+          + {
+              + cidr_block                = "10.67.0.0/16"
+              + egress_only_gateway_id    = ""
+              + gateway_id                = ""
+              + instance_id               = ""
+              + ipv6_cidr_block           = ""
+              + nat_gateway_id            = ""
+              + network_interface_id      = ""
+              + transit_gateway_id        = ""
+              + vpc_peering_connection_id = "pcx-38dfd651"
+            },
+        ]
+      + vpc_id           = "vpc-84f1a8e2"
+    }
+
+  # aws_route_table_association.main[0] will be created
+  + resource "aws_route_table_association" "main" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # aws_route_table_association.main[1] will be created
+  + resource "aws_route_table_association" "main" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # aws_security_group_rule.default will be created
+  + resource "aws_security_group_rule" "default" {
+      + cidr_blocks              = [
+          + "10.0.0.0/16",
+        ]
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + security_group_id        = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "ingress"
+    }
+
+  # aws_subnet.main[0] will be created
+  + resource "aws_subnet" "main" {
+      + arn                             = (known after apply)
+      + assign_ipv6_address_on_creation = false
+      + availability_zone               = "us-east-1a"
+      + availability_zone_id            = (known after apply)
+      + cidr_block                      = "10.0.101.0/24"
+      + id                              = (known after apply)
+      + ipv6_cidr_block                 = (known after apply)
+      + ipv6_cidr_block_association_id  = (known after apply)
+      + map_public_ip_on_launch         = false
+      + owner_id                        = (known after apply)
+      + tags                            = {
+          + "ClusterName"                 = "infra"
+          + "Name"                        = "stage-a"
+          + "kubernetes.io/cluster/infra" = "shared"
+        }
+      + vpc_id                          = "vpc-84f1a8e2"
+    }
+
+  # aws_subnet.main[1] will be created
+  + resource "aws_subnet" "main" {
+      + arn                             = (known after apply)
+      + assign_ipv6_address_on_creation = false
+      + availability_zone               = "us-east-1b"
+      + availability_zone_id            = (known after apply)
+      + cidr_block                      = "10.0.102.0/24"
+      + id                              = (known after apply)
+      + ipv6_cidr_block                 = (known after apply)
+      + ipv6_cidr_block_association_id  = (known after apply)
+      + map_public_ip_on_launch         = false
+      + owner_id                        = (known after apply)
+      + tags                            = {
+          + "ClusterName"                 = "infra"
+          + "Name"                        = "stage-b"
+          + "kubernetes.io/cluster/infra" = "shared"
+        }
+      + vpc_id                          = "vpc-84f1a8e2"
+    }
+
+  # kubernetes_role.jenkins[0] will be created
+  + resource "kubernetes_role" "jenkins" {
+      + id = (known after apply)
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "terraform-jenkins"
+          + namespace        = "default"
+          + resource_version = (known after apply)
+          + self_link        = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + rule {
+          + api_groups = [
+              + "",
+            ]
+          + resources  = [
+              + "pods",
+            ]
+          + verbs      = [
+              + "create",
+              + "delete",
+              + "get",
+              + "list",
+              + "patch",
+              + "update",
+              + "watch",
+            ]
+        }
+      + rule {
+          + api_groups = [
+              + "",
+            ]
+          + resources  = [
+              + "pods/exec",
+            ]
+          + verbs      = [
+              + "create",
+              + "delete",
+              + "get",
+              + "list",
+              + "patch",
+              + "update",
+              + "watch",
+            ]
+        }
+      + rule {
+          + api_groups = [
+              + "",
+            ]
+          + resources  = [
+              + "pods/log",
+            ]
+          + verbs      = [
+              + "get",
+              + "list",
+              + "watch",
+            ]
+        }
+      + rule {
+          + api_groups = [
+              + "",
+            ]
+          + resources  = [
+              + "events",
+            ]
+          + verbs      = [
+              + "watch",
+            ]
+        }
+      + rule {
+          + api_groups = [
+              + "",
+            ]
+          + resources  = [
+              + "secrets",
+            ]
+          + verbs      = [
+              + "get",
+            ]
+        }
+    }
+
+  # kubernetes_role_binding.jenkins[0] will be created
+  + resource "kubernetes_role_binding" "jenkins" {
+      + id = (known after apply)
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "terraform-jenkins"
+          + namespace        = "default"
+          + resource_version = (known after apply)
+          + self_link        = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + role_ref {
+          + api_group = "rbac.authorization.k8s.io"
+          + kind      = "Role"
+          + name      = "jenkins"
+        }
+
+      + subject {
+          + api_group = (known after apply)
+          + kind      = "ServiceAccount"
+          + name      = "jenkins"
+          + namespace = "kube-system"
+        }
+    }
+
+  # kubernetes_service_account.jenkins[0] will be created
+  + resource "kubernetes_service_account" "jenkins" {
+      + default_secret_name = (known after apply)
+      + id                  = (known after apply)
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "terraform-jenkins"
+          + namespace        = "default"
+          + resource_version = (known after apply)
+          + self_link        = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # null_resource.export-kubeconfig will be created
+  + resource "null_resource" "export-kubeconfig" {
+      + id = (known after apply)
+    }
+
+  # module.cluster_wildcard_issuer.aws_iam_access_key.main will be created
+  + resource "aws_iam_access_key" "main" {
+      + encrypted_secret     = (known after apply)
+      + id                   = (known after apply)
+      + key_fingerprint      = (known after apply)
+      + secret               = (sensitive value)
+      + ses_smtp_password    = (sensitive value)
+      + ses_smtp_password_v4 = (sensitive value)
+      + status               = (known after apply)
+      + user                 = "infra-cluster-wildcard-issuer"
+    }
+
+  # module.cluster_wildcard_issuer.aws_iam_policy.main[0] will be created
+  + resource "aws_iam_policy" "main" {
+      + arn    = (known after apply)
+      + id     = (known after apply)
+      + name   = "infra-cluster-wildcard-issuer"
+      + path   = "/"
+      + policy = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action   = "route53:GetChange"
+                      + Effect   = "Allow"
+                      + Resource = "arn:aws:route53:::change/*"
+                      + Sid      = ""
+                    },
+                  + {
+                      + Action   = "route53:ChangeResourceRecordSets"
+                      + Effect   = "Allow"
+                      + Resource = "arn:aws:route53:::hostedzone/Z0920475CC1ZDWKFHM5S"
+                      + Sid      = ""
+                    },
+                  + {
+                      + Action   = "route53:ListHostedZonesByName"
+                      + Effect   = "Allow"
+                      + Resource = "*"
+                      + Sid      = ""
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+    }
+
+  # module.cluster_wildcard_issuer.aws_iam_user.main will be created
+  + resource "aws_iam_user" "main" {
+      + arn           = (known after apply)
+      + force_destroy = true
+      + id            = (known after apply)
+      + name          = "infra-cluster-wildcard-issuer"
+      + path          = "/"
+      + unique_id     = (known after apply)
+    }
+
+  # module.cluster_wildcard_issuer.aws_iam_user_policy_attachment.main[0] will be created
+  + resource "aws_iam_user_policy_attachment" "main" {
+      + id         = (known after apply)
+      + policy_arn = (known after apply)
+      + user       = "infra-cluster-wildcard-issuer"
+    }
+
+  # module.eks.data.aws_iam_policy_document.worker_autoscaling[0] will be read during apply
+  # (config refers to values not yet known)
+ <= data "aws_iam_policy_document" "worker_autoscaling"  {
+      + id   = (known after apply)
+      + json = (known after apply)
+
+      + statement {
+          + actions   = [
+              + "autoscaling:DescribeAutoScalingGroups",
+              + "autoscaling:DescribeAutoScalingInstances",
+              + "autoscaling:DescribeLaunchConfigurations",
+              + "autoscaling:DescribeTags",
+              + "ec2:DescribeLaunchTemplateVersions",
+            ]
+          + effect    = "Allow"
+          + resources = [
+              + "*",
+            ]
+          + sid       = "eksWorkerAutoscalingAll"
+        }
+      + statement {
+          + actions   = [
+              + "autoscaling:SetDesiredCapacity",
+              + "autoscaling:TerminateInstanceInAutoScalingGroup",
+              + "autoscaling:UpdateAutoScalingGroup",
+            ]
+          + effect    = "Allow"
+          + resources = [
+              + "*",
+            ]
+          + sid       = "eksWorkerAutoscalingOwn"
+
+          + condition {
+              + test     = "StringEquals"
+              + values   = [
+                  + "owned",
+                ]
+              + variable = "autoscaling:ResourceTag/kubernetes.io/cluster/infra"
+            }
+          + condition {
+              + test     = "StringEquals"
+              + values   = [
+                  + "true",
+                ]
+              + variable = "autoscaling:ResourceTag/k8s.io/cluster-autoscaler/enabled"
+            }
+        }
+    }
+
+  # module.eks.data.template_file.kubeconfig[0] will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "kubeconfig"  {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = <<~EOT
+            apiVersion: v1
+            preferences: {}
+            kind: Config
+            
+            clusters:
+            - cluster:
+                server: ${endpoint}
+                certificate-authority-data: ${cluster_auth_base64}
+              name: ${kubeconfig_name}
+            
+            contexts:
+            - context:
+                cluster: ${kubeconfig_name}
+                user: ${kubeconfig_name}
+              name: ${kubeconfig_name}
+            
+            current-context: ${kubeconfig_name}
+            
+            users:
+            - name: ${kubeconfig_name}
+              user:
+                exec:
+                  apiVersion: client.authentication.k8s.io/v1alpha1
+                  command: ${aws_authenticator_command}
+                  args:
+            ${aws_authenticator_command_args}
+            ${aws_authenticator_additional_args}
+            ${aws_authenticator_env_variables}
+        EOT
+      + vars     = {
+          + "aws_authenticator_additional_args" = ""
+          + "aws_authenticator_command"         = "aws-iam-authenticator"
+          + "aws_authenticator_command_args"    = <<~EOT
+                        - "token"
+                        - "-i"
+                        - "infra"
+            EOT
+          + "aws_authenticator_env_variables"   = ""
+          + "cluster_auth_base64"               = (known after apply)
+          + "endpoint"                          = (known after apply)
+          + "kubeconfig_name"                   = "eks_infra"
+        }
+    }
+
+  # module.eks.data.template_file.node_group_arns[0] will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "node_group_arns"  {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = <<~EOT
+            - rolearn: ${worker_role_arn}
+              username: system:node:{{EC2PrivateDNSName}}
+              groups:
+                - system:bootstrappers
+                - system:nodes
+                %{~ if platform == "windows" ~}
+                - eks:kube-proxy-windows
+                %{~ endif ~}
+        EOT
+      + vars     = {
+          + "platform"        = "linux"
+          + "worker_role_arn" = (known after apply)
+        }
+    }
+
+  # module.eks.data.template_file.node_group_arns[1] will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "node_group_arns"  {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = <<~EOT
+            - rolearn: ${worker_role_arn}
+              username: system:node:{{EC2PrivateDNSName}}
+              groups:
+                - system:bootstrappers
+                - system:nodes
+                %{~ if platform == "windows" ~}
+                - eks:kube-proxy-windows
+                %{~ endif ~}
+        EOT
+      + vars     = {
+          + "platform"        = "linux"
+          + "worker_role_arn" = (known after apply)
+        }
+    }
+
+  # module.eks.data.template_file.node_group_arns[2] will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "node_group_arns"  {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = <<~EOT
+            - rolearn: ${worker_role_arn}
+              username: system:node:{{EC2PrivateDNSName}}
+              groups:
+                - system:bootstrappers
+                - system:nodes
+                %{~ if platform == "windows" ~}
+                - eks:kube-proxy-windows
+                %{~ endif ~}
+        EOT
+      + vars     = {
+          + "platform"        = "linux"
+          + "worker_role_arn" = (known after apply)
+        }
+    }
+
+  # module.eks.data.template_file.node_group_arns[3] will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "node_group_arns"  {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = <<~EOT
+            - rolearn: ${worker_role_arn}
+              username: system:node:{{EC2PrivateDNSName}}
+              groups:
+                - system:bootstrappers
+                - system:nodes
+                %{~ if platform == "windows" ~}
+                - eks:kube-proxy-windows
+                %{~ endif ~}
+        EOT
+      + vars     = {
+          + "platform"        = "linux"
+          + "worker_role_arn" = (known after apply)
+        }
+    }
+
+  # module.eks.data.template_file.node_group_arns[4] will be read during apply
+  # (config refers to values not yet known)
+ <= data "template_file" "node_group_arns"  {
+      + id       = (known after apply)
+      + rendered = (known after apply)
+      + template = <<~EOT
+            - rolearn: ${worker_role_arn}
+              username: system:node:{{EC2PrivateDNSName}}
+              groups:
+                - system:bootstrappers
+                - system:nodes
+                %{~ if platform == "windows" ~}
+                - eks:kube-proxy-windows
+                %{~ endif ~}
+        EOT
+      + vars     = {
+          + "platform"        = "linux"
+          + "worker_role_arn" = (known after apply)
+        }
+    }
+
+  # module.eks.aws_eks_cluster.this[0] will be created
+  + resource "aws_eks_cluster" "this" {
+      + arn                   = (known after apply)
+      + certificate_authority = (known after apply)
+      + created_at            = (known after apply)
+      + endpoint              = (known after apply)
+      + id                    = (known after apply)
+      + identity              = (known after apply)
+      + name                  = "infra"
+      + platform_version      = (known after apply)
+      + role_arn              = (known after apply)
+      + status                = (known after apply)
+      + tags                  = {
+          + "Environment" = "infra"
+        }
+      + version               = "1.14"
+
+      + timeouts {
+          + create = "15m"
+          + delete = "15m"
+        }
+
+      + vpc_config {
+          + cluster_security_group_id = (known after apply)
+          + endpoint_private_access   = false
+          + endpoint_public_access    = true
+          + public_access_cidrs       = (known after apply)
+          + security_group_ids        = (known after apply)
+          + subnet_ids                = (known after apply)
+          + vpc_id                    = (known after apply)
+        }
+    }
+
+  # module.eks.aws_eks_node_group.workers["infra-default-m4-xlarge"] will be created
+  + resource "aws_eks_node_group" "workers" {
+      + ami_type        = (known after apply)
+      + arn             = (known after apply)
+      + cluster_name    = "infra"
+      + disk_size       = (known after apply)
+      + id              = (known after apply)
+      + instance_types  = (known after apply)
+      + labels          = (known after apply)
+      + node_group_name = (known after apply)
+      + node_role_arn   = (known after apply)
+      + release_version = (known after apply)
+      + resources       = (known after apply)
+      + status          = (known after apply)
+      + subnet_ids      = (known after apply)
+      + tags            = (known after apply)
+      + version         = "1.14"
+
+      + remote_access {
+          + ec2_ssh_key               = (known after apply)
+          + source_security_group_ids = (known after apply)
+        }
+
+      + scaling_config {
+          + desired_size = (known after apply)
+          + max_size     = (known after apply)
+          + min_size     = (known after apply)
+        }
+    }
+
+  # module.eks.aws_eks_node_group.workers["infra-default-t2-large"] will be created
+  + resource "aws_eks_node_group" "workers" {
+      + ami_type        = (known after apply)
+      + arn             = (known after apply)
+      + cluster_name    = "infra"
+      + disk_size       = (known after apply)
+      + id              = (known after apply)
+      + instance_types  = (known after apply)
+      + labels          = (known after apply)
+      + node_group_name = (known after apply)
+      + node_role_arn   = (known after apply)
+      + release_version = (known after apply)
+      + resources       = (known after apply)
+      + status          = (known after apply)
+      + subnet_ids      = (known after apply)
+      + tags            = (known after apply)
+      + version         = "1.14"
+
+      + remote_access {
+          + ec2_ssh_key               = (known after apply)
+          + source_security_group_ids = (known after apply)
+        }
+
+      + scaling_config {
+          + desired_size = (known after apply)
+          + max_size     = (known after apply)
+          + min_size     = (known after apply)
+        }
+    }
+
+  # module.eks.aws_eks_node_group.workers["infra-default-t2-xlarge"] will be created
+  + resource "aws_eks_node_group" "workers" {
+      + ami_type        = (known after apply)
+      + arn             = (known after apply)
+      + cluster_name    = "infra"
+      + disk_size       = (known after apply)
+      + id              = (known after apply)
+      + instance_types  = (known after apply)
+      + labels          = (known after apply)
+      + node_group_name = (known after apply)
+      + node_role_arn   = (known after apply)
+      + release_version = (known after apply)
+      + resources       = (known after apply)
+      + status          = (known after apply)
+      + subnet_ids      = (known after apply)
+      + tags            = (known after apply)
+      + version         = "1.14"
+
+      + remote_access {
+          + ec2_ssh_key               = (known after apply)
+          + source_security_group_ids = (known after apply)
+        }
+
+      + scaling_config {
+          + desired_size = (known after apply)
+          + max_size     = (known after apply)
+          + min_size     = (known after apply)
+        }
+    }
+
+  # module.eks.aws_eks_node_group.workers["infra-infra-m5-large"] will be created
+  + resource "aws_eks_node_group" "workers" {
+      + ami_type        = (known after apply)
+      + arn             = (known after apply)
+      + cluster_name    = "infra"
+      + disk_size       = (known after apply)
+      + id              = (known after apply)
+      + instance_types  = (known after apply)
+      + labels          = (known after apply)
+      + node_group_name = (known after apply)
+      + node_role_arn   = (known after apply)
+      + release_version = (known after apply)
+      + resources       = (known after apply)
+      + status          = (known after apply)
+      + subnet_ids      = (known after apply)
+      + tags            = (known after apply)
+      + version         = "1.14"
+
+      + remote_access {
+          + ec2_ssh_key               = (known after apply)
+          + source_security_group_ids = (known after apply)
+        }
+
+      + scaling_config {
+          + desired_size = (known after apply)
+          + max_size     = (known after apply)
+          + min_size     = (known after apply)
+        }
+    }
+
+  # module.eks.aws_eks_node_group.workers["infra-spark-m4-xlarge"] will be created
+  + resource "aws_eks_node_group" "workers" {
+      + ami_type        = (known after apply)
+      + arn             = (known after apply)
+      + cluster_name    = "infra"
+      + disk_size       = (known after apply)
+      + id              = (known after apply)
+      + instance_types  = (known after apply)
+      + labels          = (known after apply)
+      + node_group_name = (known after apply)
+      + node_role_arn   = (known after apply)
+      + release_version = (known after apply)
+      + resources       = (known after apply)
+      + status          = (known after apply)
+      + subnet_ids      = (known after apply)
+      + tags            = (known after apply)
+      + version         = "1.14"
+
+      + remote_access {
+          + ec2_ssh_key               = (known after apply)
+          + source_security_group_ids = (known after apply)
+        }
+
+      + scaling_config {
+          + desired_size = (known after apply)
+          + max_size     = (known after apply)
+          + min_size     = (known after apply)
+        }
+    }
+
+  # module.eks.aws_iam_policy.node_groups_autoscaling[0] will be created
+  + resource "aws_iam_policy" "node_groups_autoscaling" {
+      + arn         = (known after apply)
+      + description = "EKS worker node autoscaling policy for cluster infra"
+      + id          = (known after apply)
+      + name        = (known after apply)
+      + name_prefix = "eks-worker-autoscaling-infra"
+      + path        = "/"
+      + policy      = (known after apply)
+    }
+
+  # module.eks.aws_iam_policy.worker_autoscaling[0] will be created
+  + resource "aws_iam_policy" "worker_autoscaling" {
+      + arn         = (known after apply)
+      + description = "EKS worker node autoscaling policy for cluster infra"
+      + id          = (known after apply)
+      + name        = (known after apply)
+      + name_prefix = "eks-worker-autoscaling-infra"
+      + path        = "/"
+      + policy      = (known after apply)
+    }
+
+  # module.eks.aws_iam_role.cluster[0] will be created
+  + resource "aws_iam_role" "cluster" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "eks.amazonaws.com"
+                        }
+                      + Sid       = "EKSClusterAssumeRole"
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = true
+      + id                    = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = (known after apply)
+      + name_prefix           = "infra"
+      + path                  = "/"
+      + tags                  = {
+          + "Environment" = "infra"
+        }
+      + unique_id             = (known after apply)
+    }
+
+  # module.eks.aws_iam_role.node_groups[0] will be created
+  + resource "aws_iam_role" "node_groups" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "ec2.amazonaws.com"
+                        }
+                      + Sid       = "EKSWorkerAssumeRole"
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = true
+      + id                    = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "infra-managed-node-groups"
+      + path                  = "/"
+      + tags                  = {
+          + "Environment" = "infra"
+        }
+      + unique_id             = (known after apply)
+    }
+
+  # module.eks.aws_iam_role.workers[0] will be created
+  + resource "aws_iam_role" "workers" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "ec2.amazonaws.com"
+                        }
+                      + Sid       = "EKSWorkerAssumeRole"
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = true
+      + id                    = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = (known after apply)
+      + name_prefix           = "infra"
+      + path                  = "/"
+      + tags                  = {
+          + "Environment" = "infra"
+        }
+      + unique_id             = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy[0] will be created
+  + resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.cluster_AmazonEKSServicePolicy[0] will be created
+  + resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSServicePolicy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.node_groups_AmazonEC2ContainerRegistryReadOnly[0] will be created
+  + resource "aws_iam_role_policy_attachment" "node_groups_AmazonEC2ContainerRegistryReadOnly" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+      + role       = "infra-managed-node-groups"
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.node_groups_AmazonEKSWorkerNodePolicy[0] will be created
+  + resource "aws_iam_role_policy_attachment" "node_groups_AmazonEKSWorkerNodePolicy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+      + role       = "infra-managed-node-groups"
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.node_groups_AmazonEKS_CNI_Policy[0] will be created
+  + resource "aws_iam_role_policy_attachment" "node_groups_AmazonEKS_CNI_Policy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+      + role       = "infra-managed-node-groups"
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.node_groups_additional_policies["arn:aws:iam::138150065595:policy/infra-eks-route53"] will be created
+  + resource "aws_iam_role_policy_attachment" "node_groups_additional_policies" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::138150065595:policy/infra-eks-route53"
+      + role       = "infra-managed-node-groups"
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.node_groups_autoscaling[0] will be created
+  + resource "aws_iam_role_policy_attachment" "node_groups_autoscaling" {
+      + id         = (known after apply)
+      + policy_arn = (known after apply)
+      + role       = "infra-managed-node-groups"
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.workers_AmazonEC2ContainerRegistryReadOnly[0] will be created
+  + resource "aws_iam_role_policy_attachment" "workers_AmazonEC2ContainerRegistryReadOnly" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.workers_AmazonEKSWorkerNodePolicy[0] will be created
+  + resource "aws_iam_role_policy_attachment" "workers_AmazonEKSWorkerNodePolicy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.workers_AmazonEKS_CNI_Policy[0] will be created
+  + resource "aws_iam_role_policy_attachment" "workers_AmazonEKS_CNI_Policy" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.workers_additional_policies[0] will be created
+  + resource "aws_iam_role_policy_attachment" "workers_additional_policies" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::138150065595:policy/infra-eks-route53"
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_iam_role_policy_attachment.workers_autoscaling[0] will be created
+  + resource "aws_iam_role_policy_attachment" "workers_autoscaling" {
+      + id         = (known after apply)
+      + policy_arn = (known after apply)
+      + role       = (known after apply)
+    }
+
+  # module.eks.aws_security_group.cluster[0] will be created
+  + resource "aws_security_group" "cluster" {
+      + arn                    = (known after apply)
+      + description            = "EKS cluster security group."
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = (known after apply)
+      + name_prefix            = "infra"
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "infra"
+          + "Name"        = "infra-eks_cluster_sg"
+        }
+      + vpc_id                 = "vpc-84f1a8e2"
+    }
+
+  # module.eks.aws_security_group_rule.cluster_egress_internet[0] will be created
+  + resource "aws_security_group_rule" "cluster_egress_internet" {
+      + cidr_blocks              = [
+          + "0.0.0.0/0",
+        ]
+      + description              = "Allow cluster egress access to the Internet."
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + security_group_id        = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "egress"
+    }
+
+  # module.eks.aws_security_group_rule.cluster_https_worker_ingress[0] will be created
+  + resource "aws_security_group_rule" "cluster_https_worker_ingress" {
+      + description              = "Allow pods to communicate with the EKS cluster API."
+      + from_port                = 443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + security_group_id        = (known after apply)
+      + self                     = false
+      + source_security_group_id = "sg-56eb5b29"
+      + to_port                  = 443
+      + type                     = "ingress"
+    }
+
+  # module.eks.kubernetes_config_map.aws_auth[0] will be created
+  + resource "kubernetes_config_map" "aws_auth" {
+      + data = (known after apply)
+      + id   = (known after apply)
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "aws-auth"
+          + namespace        = "kube-system"
+          + resource_version = (known after apply)
+          + self_link        = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # module.eks.local_file.kubeconfig[0] will be created
+  + resource "local_file" "kubeconfig" {
+      + content              = (known after apply)
+      + directory_permission = "0777"
+      + file_permission      = "0777"
+      + filename             = "./kubeconfig_infra"
+      + id                   = (known after apply)
+    }
+
+  # module.eks.random_pet.node_groups["infra-default-m4-xlarge"] will be created
+  + resource "random_pet" "node_groups" {
+      + id        = (known after apply)
+      + keepers   = (known after apply)
+      + length    = 2
+      + separator = "-"
+    }
+
+  # module.eks.random_pet.node_groups["infra-default-t2-large"] will be created
+  + resource "random_pet" "node_groups" {
+      + id        = (known after apply)
+      + keepers   = (known after apply)
+      + length    = 2
+      + separator = "-"
+    }
+
+  # module.eks.random_pet.node_groups["infra-default-t2-xlarge"] will be created
+  + resource "random_pet" "node_groups" {
+      + id        = (known after apply)
+      + keepers   = (known after apply)
+      + length    = 2
+      + separator = "-"
+    }
+
+  # module.eks.random_pet.node_groups["infra-infra-m5-large"] will be created
+  + resource "random_pet" "node_groups" {
+      + id        = (known after apply)
+      + keepers   = (known after apply)
+      + length    = 2
+      + separator = "-"
+    }
+
+  # module.eks.random_pet.node_groups["infra-spark-m4-xlarge"] will be created
+  + resource "random_pet" "node_groups" {
+      + id        = (known after apply)
+      + keepers   = (known after apply)
+      + length    = 2
+      + separator = "-"
+    }
+
+Plan: 50 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+Note: You didn't specify an "-out" parameter to save this plan, so Terraform
+can't guarantee that exactly these actions will be performed if
+"terraform apply" is subsequently run.
+
+Releasing state lock. This may take a few moments...
+
